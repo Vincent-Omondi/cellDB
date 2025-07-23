@@ -1,277 +1,449 @@
 # CellDB: Serverless Database Framework for Internet Computer
 
-CellDB is a production-ready, serverless database framework specifically designed for the Internet Computer's actor-based architecture. Rather than forcing traditional database patterns onto blockchain infrastructure, CellDB embraces ICP's unique capabilities through autonomous Data Cells—intelligent storage actors that encapsulate schemas, business logic, and access control within individual canisters. The framework delivers 60-80% cycle cost reduction compared to existing solutions while providing familiar database abstractions that enable developers to build sophisticated data-driven applications without sacrificing decentralization principles. With its self-optimizing architecture, CellDB aligns perfectly with the emerging vision of autonomous internet infrastructure, where data management systems adapt and scale automatically without manual intervention.
+[![Internet Computer](https://img.shields.io/badge/Internet%20Computer-Protocol-blue)](https://internetcomputer.org)
+[![DFX](https://img.shields.io/badge/DFX-v0.22.0-green)](https://github.com/dfinity/sdk)
+[![Rust](https://img.shields.io/badge/Rust-1.70+-orange)](https://rustlang.org)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
+[![Development Status](https://img.shields.io/badge/Status-Active%20Development-yellow)](https://github.com/celldb/celldb)
 
-## Introduction
+CellDB is a serverless database framework architected specifically for the Internet Computer's actor-based computational model. Rather than adapting traditional database patterns to blockchain constraints, CellDB embraces the Internet Computer's unique capabilities through autonomous Data Cells—intelligent storage actors that encapsulate data schemas, business logic, and access control within individual canisters, leveraging orthogonal persistence and stable memory for optimal performance.
 
-CellDB solves the fundamental challenge facing Internet Computer developers: building sophisticated data-driven applications without acceptable performance characteristics or economic viability. Current ICP data management solutions require 3-5x more development time and 5-10x more cycles than necessary, severely limiting the types of applications developers can build economically.
+CellDB is currently in active development and represents a developer preview implementation. The framework is not yet ready for production deployment and APIs may change as development progresses. Early adopters and contributors are welcome to explore the codebase and provide feedback through GitHub issues.
 
-**Key Features:**
+## Overview
 
-- **Autonomous Data Cells**: Self-contained storage actors with embedded business logic, validation, and access control
-- **Streaming Query Aggregation**: Cost-optimized cross-canister coordination with intelligent batching and caching  
-- **Sub-100ms Performance**: Single-Cell operations under 100ms, complex aggregations under 500ms
-- **Serverless Architecture**: Deploy data storage through simple API calls without managing canister lifecycle
-- **Economic Efficiency**: 60-80% reduction in cycle costs through ICP-optimized patterns and intelligent resource management
-- **Production-Ready**: Comprehensive error handling, automatic memory management, and schema versioning for enterprise deployments
+CellDB addresses the fundamental challenge facing Internet Computer developers: constructing sophisticated data-driven applications while maintaining economic viability and performance characteristics suitable for Web3 scale. Current approaches require 3-5x additional development overhead and consume 5-10x more cycles than necessary, creating barriers to building complex decentralized applications on the Internet Computer platform.
 
-CellDB enables new categories of applications including global social networks, real-time gaming platforms, and sophisticated DeFi protocols that were previously impossible to build economically on decentralized infrastructure.
+This early-access framework provides a comprehensive solution for data management on the Internet Computer through four core canister types that work in concert to deliver database functionality optimized for the platform's unique characteristics:
 
-![CellDB Architecture](architecture-diagram.png)
+**Data Cells** serve as autonomous storage actors that combine data persistence with embedded business logic, validation rules, and access control mechanisms within individual canisters. Each Cell utilizes stable memory for efficient data storage and leverages the Internet Computer's orthogonal persistence model to maintain state across canister upgrades without explicit serialization overhead.
 
-*Architecture Overview: Data Cells provide autonomous storage with embedded logic, Query Aggregators enable efficient cross-cell coordination, and AtlasMesh delivers distributed indexing—all optimized for Internet Computer's unique actor model.*
+**Query Aggregators** coordinate cross-canister data operations through intelligent streaming interfaces that minimize expensive inter-canister calls while providing SQL-like query capabilities across multiple Data Cells. The aggregation layer implements cost-optimized batching strategies and result caching to achieve sub-500ms response times for complex operations.
+
+**Atlas Mesh** delivers distributed indexing infrastructure that maintains eventually-consistent global indexes and full-text search capabilities across the Cell ecosystem, utilizing event-driven updates to minimize computational overhead while providing real-time query performance.
+
+**Cell Manager** orchestrates the lifecycle of Data Cells, handling canister creation, schema versioning, horizontal scaling through automated Cell splitting, and resource allocation optimization based on usage patterns and subnet distribution.
+
+## Architecture
+
+The CellDB architecture leverages the Internet Computer's actor model where each canister operates as an independent computational unit with its own memory space and message queue. Inter-canister communication follows asynchronous patterns optimized for the platform's consensus mechanism, while stable memory utilization ensures data persistence across canister upgrades and subnet maintenance operations.
+
+```mermaid
+graph TB
+    subgraph "Internet Computer Subnet"
+        subgraph "CellDB Infrastructure"
+            CM[Cell Manager<br/>Lifecycle & Orchestration]
+            QA[Query Aggregator<br/>Cross-Canister Coordination]
+            AM[Atlas Mesh<br/>Distributed Indexing]
+
+            subgraph "Data Cells"
+                DC1[Data Cell 1<br/>User Profiles]
+                DC2[Data Cell 2<br/>Posts & Content]
+                DC3[Data Cell 3<br/>Social Graph]
+            end
+        end
+
+        subgraph "Stable Memory Layer"
+            SM1[Stable Memory<br/>Schema & State]
+            SM2[Stable Memory<br/>Query Cache]
+            SM3[Stable Memory<br/>Index Storage]
+        end
+    end
+
+    %% Management relationships
+    CM -.->|Creates & Manages| DC1
+    CM -.->|Creates & Manages| DC2
+    CM -.->|Creates & Manages| DC3
+
+    %% Query coordination
+    QA <-->|Async Queries| DC1
+    QA <-->|Async Queries| DC2
+    QA <-->|Async Queries| DC3
+
+    %% Indexing relationships
+    AM -->|Event Subscription| DC1
+    AM -->|Event Subscription| DC2
+    AM -->|Event Subscription| DC3
+
+    %% Stable memory persistence
+    DC1 -.-> SM1
+    DC2 -.-> SM1
+    DC3 -.-> SM1
+    QA -.-> SM2
+    AM -.-> SM3
+
+    %% Styling
+    classDef canister fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef storage fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef infrastructure fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+
+    class DC1,DC2,DC3 canister
+    class SM1,SM2,SM3 storage
+    class CM,QA,AM infrastructure
+```
+
+## File System Layout
+
+```
+celldb/
+├── canisters/                      # Canister implementations
+│   ├── cell_manager/               # Cell lifecycle management
+│   │   ├── src/
+│   │   │   ├── lib.rs             # Main canister logic
+│   │   │   ├── state.rs           # Stable memory state management
+│   │   │   └── types.rs           # Candid type definitions
+│   │   └── cell_manager.did       # Candid interface specification
+│   ├── data_cell/                 # Autonomous storage actors
+│   │   ├── src/
+│   │   │   ├── lib.rs             # Core Cell functionality
+│   │   │   ├── schema.rs          # Schema validation and versioning
+│   │   │   ├── storage.rs         # Stable memory operations
+│   │   │   ├── validation.rs      # Data validation logic
+│   │   │   └── access_control.rs  # Permission management
+│   │   └── data_cell.did          # Cell interface specification
+│   ├── query_aggregator/          # Cross-canister coordination
+│   │   ├── src/
+│   │   │   ├── lib.rs             # Aggregation logic
+│   │   │   ├── streaming.rs       # Result streaming implementation
+│   │   │   ├── coordination.rs    # Multi-canister orchestration
+│   │   │   └── optimization.rs    # Query optimization engine
+│   │   └── query_aggregator.did   # Aggregator interface
+│   └── atlas_mesh/                # Distributed indexing
+│       ├── src/
+│       │   ├── lib.rs             # Mesh coordination
+│       │   ├── indexing.rs        # Index management
+│       │   ├── search.rs          # Full-text search
+│       │   └── sync.rs            # Cross-mesh synchronization
+│       └── atlas_mesh.did         # Mesh interface specification
+├── sdk/                           # Developer interfaces
+│   ├── rust/                      # Rust client library
+│   ├── motoko/                    # Motoko integration modules
+│   └── typescript/                # TypeScript/JavaScript SDK
+├── examples/                      # Integration examples
+│   ├── social_media/              # Social platform implementation
+│   ├── dao_governance/            # DAO data management
+│   └── gaming/                    # Real-time gaming data
+├── tests/                         # Test suites
+├── scripts/                       # Deployment automation
+├── dfx.json                       # DFX project configuration
+└── Cargo.toml                     # Rust workspace configuration
+```
 
 ## Installation
 
 ### Prerequisites
 
-Ensure you have the following installed:
+CellDB requires the Internet Computer SDK and Rust toolchain for canister development:
 
 ```bash
-# Internet Computer SDK
-$ sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+# Install Internet Computer SDK
+sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
 
-# Node.js (v16 or later)
-$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-$ nvm install 16 && nvm use 16
+# Install Rust with WebAssembly target
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup target add wasm32-unknown-unknown
 
-# Rust (for advanced Cell development)
-$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# Verify DFX installation
+dfx --version
 ```
 
-### Install
+### Local Development Setup
 
 ```bash
-# Clone the repository
-$ git clone https://github.com/celldb/celldb
-$ cd celldb
-
-# Install dependencies
-$ npm install
+# Clone repository
+git clone https://github.com/celldb/celldb
+cd celldb
 
 # Start local Internet Computer replica
-$ dfx start --background
+dfx start --background --clean
 
-# Deploy CellDB infrastructure
-$ dfx deploy
+# Deploy CellDB infrastructure canisters
+dfx deploy --with-cycles 1000000000000
 
-# Install CellDB SDK
-$ npm install @celldb/sdk
+# Verify canister deployment
+dfx canister status --all
 ```
 
-Initialize your first CellDB application:
+### Network Deployment
+
+For Internet Computer mainnet deployment:
 
 ```bash
-$ npx celldb init my-app
-$ cd my-app
-$ npm install
-$ dfx deploy
+# Deploy to Internet Computer mainnet
+dfx deploy --network ic --with-cycles 1000000000000
+
+# Configure cycles wallet for production
+dfx identity --network ic get-wallet
+dfx wallet --network ic balance
 ```
 
-## Usage
+## Canister Descriptions
 
-### Example 1: Basic Data Cell Operations
+### Cell Manager
 
-Create and interact with a User Data Cell:
+The Cell Manager canister serves as the orchestration layer for Data Cell lifecycle management, implementing canister creation, schema versioning, and resource allocation optimization. It maintains a registry of active Cells in stable memory and coordinates horizontal scaling operations through automated Cell splitting based on memory usage patterns and query load distribution.
+
+**Key Responsibilities:**
+- Dynamic canister creation using the Internet Computer Management Canister API
+- Schema validation and version compatibility checking across Cell upgrades
+- Resource allocation optimization based on subnet capacity and geographic distribution
+- Automated horizontal scaling through intelligent Cell partitioning algorithms
+
+### Data Cell
+
+Data Cells represent the core storage abstraction, implemented as autonomous actors that encapsulate data schemas, validation logic, and access control within individual canisters. Each Cell utilizes stable memory structures for efficient data persistence and implements query interfaces optimized for the Internet Computer's message passing model.
+
+**Key Characteristics:**
+- Orthogonal persistence leveraging stable memory for zero-downtime upgrades
+- Embedded validation logic executing within the canister context
+- Granular access control using Internet Computer principal-based authentication
+- Query interfaces optimized for both synchronous and asynchronous access patterns
+
+### Query Aggregator
+
+The Query Aggregator implements cross-canister coordination through intelligent streaming interfaces that minimize the cost overhead of inter-canister calls. It provides SQL-like query capabilities across multiple Data Cells while maintaining performance characteristics suitable for real-time applications through result caching and batch optimization strategies.
+
+**Architecture Features:**
+- Asynchronous query execution with result streaming to minimize latency
+- Intelligent batching algorithms that optimize inter-canister call patterns
+- Query result caching with configurable TTL and invalidation strategies
+- Cost optimization through cycle consumption analysis and execution planning
+
+### Atlas Mesh
+
+Atlas Mesh provides distributed indexing infrastructure that maintains eventually-consistent global indexes across the Data Cell ecosystem. It implements full-text search capabilities and materialized view maintenance through event-driven updates that minimize computational overhead while ensuring index freshness.
+
+**Indexing Capabilities:**
+- Eventually-consistent global indexes using event-driven update propagation
+- Full-text search with configurable stemming and relevance scoring algorithms
+- Materialized view maintenance with intelligent refresh scheduling
+- Cross-mesh synchronization for multi-subnet deployments
+
+## SDKs
+
+### Rust SDK
+
+The Rust SDK provides native integration with Internet Computer development patterns, offering type-safe interfaces for canister interaction and efficient serialization using Candid.
+
+```rust
+use celldb::prelude::*;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let agent = Agent::builder()
+        .with_url("https://ic0.app")
+        .build()?;
+
+    let cell_manager = CellManager::new(&agent, cell_manager_id);
+    let cell = cell_manager.create_cell(CellConfig {
+        schema: UserSchema::new(),
+        permissions: PermissionConfig::default(),
+    }).await?;
+
+    Ok(())
+}
+```
+
+### TypeScript SDK
+
+The TypeScript SDK enables frontend integration with CellDB infrastructure through agent-js compatibility and automatic type generation from Candid interfaces.
 
 ```typescript
-import { CellDB, Schema } from '@celldb/sdk';
+import { CellDB } from '@celldb/sdk';
 
-// Define your data schema
-const UserSchema = Schema.define({
-  id: Schema.principal().primary(),
-  username: Schema.text().min(3).max(20),
-  email: Schema.text().email().optional(),
-  profile: Schema.object({
-    bio: Schema.text().max(500).optional(),
-    preferences: Schema.record(Schema.text(), Schema.any())
-  }),
-  created_at: Schema.timestamp().default(() => Date.now())
+const celldb = await CellDB.create({
+  host: 'https://ic0.app',
+  identity: identity,
 });
 
-// Initialize CellDB
-const celldb = new CellDB({
-  network: 'local',
-  identity: await getIdentity()
-});
-
-// Deploy User Cell
-const userCell = await celldb.deployCell({
-  name: 'users',
-  schema: UserSchema,
-  options: {
-    memory_limit: '1GB',
-    permissions: {
-      read: ['public'],
-      write: ['authenticated']
-    }
-  }
-});
-
-// Create user
-const user = await userCell.insert({
-  username: 'alice',
-  email: 'alice@example.com',
-  profile: {
-    bio: 'Web3 developer',
-    preferences: { theme: 'dark' }
-  }
-});
-
-console.log('Created user:', user.id);
-```
-
-### Example 2: Cross-Cell Query Aggregation
-
-Build a social media feed aggregating data across multiple Cells:
-
-```typescript
-// Deploy multiple related Cells
-const postCell = await celldb.deployCell({
-  name: 'posts', 
-  schema: PostSchema
-});
-
-const commentCell = await celldb.deployCell({
-  name: 'comments',
-  schema: CommentSchema
-});
-
-// Create Query Aggregator
-const socialFeed = await celldb.createAggregator('social-feed', {
-  cells: ['users', 'posts', 'comments'],
-  indexes: ['user-activity', 'post-engagement']
-});
-
-// Stream user feed with real-time updates
-const feedStream = socialFeed.stream({
-  query: `
-    FROM posts p
-    JOIN users u ON p.author = u.id
-    WHERE p.published_at > $since
-    ORDER BY p.published_at DESC
-    LIMIT $limit
-  `,
-  parameters: {
-    since: Date.now() - 24 * 60 * 60 * 1000, // Last 24 hours
-    limit: 20
-  }
-});
-
-feedStream.on('data', (post) => {
-  console.log('New post:', post.title);
+const userCell = await celldb.getCell('users');
+const result = await userCell.query({
+  filter: { status: 'active' },
+  limit: 50
 });
 ```
 
-### Example 3: Canister Integration
+### Motoko Integration
 
-Integrate CellDB with existing Motoko canisters:
+Motoko modules provide native actor integration patterns for canister-to-canister communication within the Internet Computer ecosystem.
 
 ```motoko
 import CellDB "mo:celldb";
-import Principal "mo:base/Principal";
 
-actor MyApp {
-    // Connect to deployed User Cell
-    private let userCell = actor("rdmx6-jaaaa-aaaah-qdrva-cai") : CellDB.UserCell;
-    
-    // Use Cell operations in your application logic
-    public func getUserProfile(userId: Principal) : async ?UserProfile {
-        await userCell.findById(userId)
-    };
-    
-    public func createUser(userData: UserData) : async CellDB.WriteResult {
-        await userCell.insert(userData)
+actor MyApplication {
+    private let userCell = actor("rdmx6-jaaaa-aaaah-qdrva-cai") : CellDB.DataCell;
+
+    public func getUserData(userId: Principal) : async ?CellDB.Record {
+        await userCell.query(#ById(userId))
     };
 }
 ```
 
-## Documentation
+## Examples
 
-Comprehensive documentation is available at [docs.celldb.org](https://docs.celldb.org), including:
+### Social Media Platform
 
-- **[Getting Started Guide](https://docs.celldb.org/getting-started)**: Complete tutorial for building your first CellDB application
-- **[Schema Definition Reference](https://docs.celldb.org/schemas)**: Complete guide to defining data schemas with validation
-- **[Query Language Documentation](https://docs.celldb.org/queries)**: SQL-like query syntax and streaming interfaces
-- **[Performance Optimization Guide](https://docs.celldb.org/performance)**: Best practices for cycle cost optimization
-- **[Security Best Practices](https://docs.celldb.org/security)**: Access control, encryption, and audit logging
-- **[Migration Guide](https://docs.celldb.org/migration)**: Integrating CellDB with existing applications
+Demonstrates multi-Cell coordination for user profiles, posts, and social graph relationships with real-time activity feeds:
+
+```rust
+// User Cell for profile management
+let user_cell = cell_manager.create_cell(UserCellConfig {
+    schema: UserSchema::with_fields([
+        ("username", FieldType::Text { max_length: Some(50) }),
+        ("profile", FieldType::Object(profile_fields)),
+    ]),
+    indexes: vec!["username", "created_at"],
+}).await?;
+
+// Post Cell for content storage
+let post_cell = cell_manager.create_cell(PostCellConfig {
+    schema: PostSchema::with_references([
+        ("author", Reference::to_cell(&user_cell)),
+    ]),
+    partitioning: PartitionStrategy::ByAuthor,
+}).await?;
+
+// Query Aggregator for activity feeds
+let feed_aggregator = query_aggregator.create_stream(StreamQuery {
+    cells: vec![user_cell.id(), post_cell.id()],
+    query: "SELECT p.*, u.username FROM posts p JOIN users u ON p.author = u.id
+            WHERE p.created_at > ? ORDER BY p.created_at DESC",
+    parameters: vec![since_timestamp],
+}).await?;
+```
+
+## Developer Quickstart
+
+### 1. Environment Setup
+
+```bash
+# Verify Internet Computer SDK installation
+dfx --version
+
+# Create new CellDB project
+npx create-celldb-app my-project
+cd my-project
+
+# Start local development environment
+dfx start --background
+```
+
+### 2. Define Data Schema
+
+```rust
+use celldb::schema::*;
+
+#[derive(CandidType, Deserialize)]
+struct UserRecord {
+    id: Principal,
+    username: String,
+    email: Option<String>,
+    created_at: u64,
+}
+
+impl Schema for UserRecord {
+    fn definition() -> SchemaDefinition {
+        SchemaDefinition::new()
+            .field("id", FieldType::Principal)
+            .field("username", FieldType::Text { max_length: Some(50) })
+            .field("email", FieldType::OptionalText)
+            .field("created_at", FieldType::Timestamp)
+            .index("username")
+            .constraint(UniqueConstraint::new(vec!["username"]))
+    }
+}
+```
+
+### 3. Deploy and Test
+
+```bash
+# Deploy CellDB infrastructure
+dfx deploy
+
+# Create and test Data Cell
+dfx canister call cell_manager create_cell '(
+    record {
+        name = "users";
+        schema = record { /* schema definition */ };
+        permissions = record { /* permission config */ };
+    }
+)'
+
+# Query Cell data
+dfx canister call data_cell query '(
+    record {
+        conditions = vec { /* filter conditions */ };
+        limit = 10;
+    }
+)'
+```
+
+## Performance & Benchmarks
+
+CellDB performance characteristics are optimized for Internet Computer's computational model and cycle economy. The following benchmarks represent target performance goals for the framework upon completion:
+
+### Single-Cell Operations
+- **Insert Operations**: 80-150ms average latency, 1,000-2,500 ops/second throughput
+- **Query Operations**: 50-120ms for indexed lookups, 100-300ms for filtered scans
+- **Memory Efficiency**: 60-75% reduction in stable memory usage through compression
+- **Cycle Consumption**: 200K-800K cycles per operation depending on complexity
+
+### Cross-Cell Aggregation
+- **Simple Joins**: 200-400ms for 2-3 Cell coordination
+- **Complex Aggregations**: 500ms-1.2s for statistical operations across multiple Cells
+- **Streaming Queries**: 100-250ms initial response, 50-100ms per subsequent batch
+- **Cache Hit Performance**: 20-80ms for frequently accessed query patterns
+
+### Economic Sustainability
+Based on architectural projections:
+- Typical social media application (100K users, 1M posts): ~2-3 GB stable memory usage
+- Estimated monthly infrastructure cost: $12-18 USD equivalent in ICP cycles
+- Target 65-80% cycle cost reduction compared to naive cross-canister patterns
+- Query result caching projected to provide 40-70% cycle savings for repeated operations
 
 ## Testing
 
-Run the complete test suite:
+CellDB includes comprehensive test suites covering unit, integration, and performance scenarios:
 
 ```bash
-$ npm test
-```
+# Run complete test suite
+cargo test
 
-Test specific functionality:
+# Unit tests for individual canisters
+cargo test --package cell_manager
+cargo test --package data_cell
+cargo test --package query_aggregator
 
-```bash
-# Unit tests for Data Cells
-$ npm run test:cells
-
-# Integration tests for Query Aggregation
-$ npm run test:aggregation  
+# Integration tests with local replica
+dfx start --background
+./scripts/run-integration-tests.sh
 
 # Performance benchmarks
-$ npm run test:performance
-
-# End-to-end application tests
-$ npm run test:e2e
+cargo bench
 ```
 
-Load testing with realistic workloads:
+### Test Coverage Areas
+- **Schema Validation**: Type checking, constraint enforcement, migration compatibility
+- **Access Control**: Principal-based authentication, role-based authorization
+- **Query Optimization**: Execution plan generation, result caching, cycle optimization
+- **Canister Upgrades**: State preservation, schema migration, zero-downtime deployments
+- **Error Handling**: Network failures, canister unavailability, resource exhaustion scenarios
 
-```bash
-$ npm run test:load -- --users=1000 --duration=5m
-```
+## Contributing
 
-## Roadmap
+CellDB is actively seeking contributors to accelerate development. Areas of particular interest include:
 
-**Phase 1: Production Foundation (Q3 2025)**
-- [x] Core Data Cell implementation with schema validation
-- [x] Basic Query Aggregation with streaming interfaces
-- [x] TypeScript SDK with comprehensive error handling
-- [x] Memory management and cycle optimization
-- [ ] Motoko and Rust SDK completion
-- [ ] Production deployment tooling and monitoring
+- **Query Optimization**: Advanced algorithms for cross-canister query planning
+- **Index Management**: Efficient data structures for distributed indexing
+- **SDK Development**: Language bindings and developer tooling improvements
+- **Performance Testing**: Comprehensive benchmarking and optimization analysis
 
-**Phase 2: Advanced Capabilities (Q4 2025)**
-- [ ] AtlasMesh distributed indexing with full-text search
-- [ ] Advanced Query Aggregation with complex joins
-- [ ] Real-time streaming queries and event processing
-- [ ] Automated Cell splitting for horizontal scaling
-- [ ] Enterprise access control and audit logging
-
-**Phase 3: Ecosystem Integration (Q1 2026)**
-- [ ] Cross-chain data bridges (Bitcoin, Ethereum)
-- [ ] AI-powered content analysis and recommendations
-- [ ] Zero-knowledge proof integration for privacy
-- [ ] Multi-tenant deployments and SaaS offerings
-- [ ] Integration marketplace for custom Cell types
+Please review the [Internet Computer Security Best Practices](https://internetcomputer.org/docs/current/references/security/) when contributing canister code.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details. See [CONTRIBUTING.md](CONTRIBUTING.md) for details about how to contribute to this project.
-
-## Acknowledgements
-
-- **DFINITY Foundation** for the Internet Computer infrastructure and developer grants program
-- **Internet Computer Developer Community** for feedback and testing during development
-- **Early Adopters** including teams from OpenChat, DSCVR, and Taggr for integration partnerships
-- **Database Research Community** for foundational work in distributed database systems
-
-## References
-
-- [Internet Computer](https://internetcomputer.org) - The decentralized cloud platform powering CellDB
-- [Internet Computer Developer Documentation](https://internetcomputer.org/docs/current/developer-docs/backend/motoko/) - Essential ICP development resources
-- [Actor Model](https://en.wikipedia.org/wiki/Actor_model) - The computational model underlying CellDB's architecture
-- [CAP Theorem](https://en.wikipedia.org/wiki/CAP_theorem) - Consistency, Availability, and Partition tolerance trade-offs in distributed systems
-- [Event Sourcing Patterns](https://martinfowler.com/eaaDev/EventSourcing.html) - Data persistence patterns implemented in CellDB
+This project is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for complete terms.
 
 ---
 
-**Ready to build the future of decentralized data?** 🚀
-
-[Get Started](https://docs.celldb.org/getting-started) | [Join Community](https://discord.gg/celldb) | [View Examples](https://github.com/celldb/examples)
+For technical discussions and development coordination, join the conversation on the [Internet Computer Developer Forum](https://forum.dfinity.org). Bug reports and feature requests should be submitted through [GitHub Issues](https://github.com/celldb/celldb/issues).
