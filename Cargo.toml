@@ -1,0 +1,19 @@
+[workspace]
+members = [
+    "canisters/cell_manager",
+    "canisters/data_cell",
+    "canisters/query_aggregator",
+    "canisters/atlas_mesh"
+]
+
+[workspace.dependencies]
+ic-cdk = "0.13"
+ic-cdk-timers = "0.7"
+ic-stable-structures = "0.6"
+serde = { version = "1.0", features = ["derive"] }
+candid = "0.10"
+anyhow = "1.0"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
