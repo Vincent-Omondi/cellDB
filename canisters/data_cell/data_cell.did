@@ -1,0 +1,124 @@
+type CellInitConfig = record {
+    name: text;
+    schema: SchemaDefinition;
+    permissions: PermissionConfig;
+};
+
+type SchemaDefinition = record {
+    version: nat32;
+    name: text;
+    fields: vec record { text; FieldDefinition };
+    indexes: vec IndexDefinition;
+    constraints: vec ConstraintDefinition;
+};
+
+type FieldDefinition = record {
+    field_type: FieldType;
+    required: bool;
+    default_value: opt text;
+    validation_rules: vec ValidationRule;
+};
+
+type FieldType = variant {
+    Text;
+    Number;
+    Boolean;
+    Timestamp;
+    Principal;
+    Blob;
+    Array: FieldType;
+    Object: vec record { text; FieldDefinition };
+};
+
+type IndexDefinition = record {
+    name: text;
+    fields: vec text;
+    unique: bool;
+};
+
+type ConstraintDefinition = variant {
+    Unique: vec text;
+    ForeignKey: record { fields: vec text; references: text };
+    Check: text;
+};
+
+type ValidationRule = variant {
+    MinLength: nat32;
+    MaxLength: nat32;
+    Pattern: text;
+    Range: record { int64; int64 };
+    Custom: text;
+};
+
+type PermissionConfig = record {
+    read: vec AccessLevel;
+    write: vec AccessLevel;
+    admin: vec principal;
+};
+
+type AccessLevel = variant {
+    Public;
+    Authenticated;
+    Principal: principal;
+    Role: text;
+};
+
+type QueryFilter = record {
+    conditions: vec FilterCondition;
+    sort_by: opt text;
+    sort_order: SortOrder;
+};
+
+type FilterCondition = record {
+    field: text;
+    operator: ComparisonOperator;
+    value: text;
+};
+
+type ComparisonOperator = variant {
+    Equals;
+    NotEquals;
+    GreaterThan;
+    LessThan;
+    Contains;
+    StartsWith;
+};
+
+type SortOrder = variant {
+    Ascending;
+    Descending;
+};
+
+type Pagination = record {
+    offset: nat64;
+    limit: nat64;
+};
+
+type QueryResult = record {
+    records: vec text;
+    total_count: nat64;
+    has_more: bool;
+};
+
+type CellMetrics = record {
+    record_count: nat64;
+    memory_usage: nat64;
+    query_count: nat64;
+    last_updated: nat64;
+};
+
+type CellError = variant {
+    ValidationError: text;
+    PermissionDenied;
+    NotFound: text;
+    SchemaViolation: text;
+    NotImplemented: text;
+};
+
+service : (CellInitConfig) -> {
+    insert: (text) -> (variant { Ok: text; Err: CellError });
+    query: (QueryFilter, Pagination) -> (QueryResult) query;
+    update: (text, text) -> (variant { Ok; Err: CellError });
+    delete: (text) -> (variant { Ok; Err: CellError });
+    get_metrics: () -> (CellMetrics) query;
+}
