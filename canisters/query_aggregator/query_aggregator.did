@@ -1,0 +1,174 @@
+type AggregatorConfig = record {
+    name: text;
+    registered_cells: vec CellRegistration;
+    streaming_config: StreamingConfig;
+    optimization_config: OptimizationConfig;
+};
+
+type CellRegistration = record {
+    cell_id: principal;
+    name: text;
+    schema_version: nat32;
+    capabilities: vec CellCapability;
+    performance_hints: PerformanceHints;
+};
+
+type CellCapability = variant {
+    FullTextSearch;
+    GeospatialQueries;
+    AdvancedIndexing;
+    StreamingSupport;
+    BatchOperations;
+};
+
+type PerformanceHints = record {
+    typical_response_time_ms: nat32;
+    max_concurrent_queries: nat32;
+    preferred_batch_size: nat32;
+    subnet_location: opt text;
+};
+
+type StreamingConfig = record {
+    default_batch_size: nat32;
+    max_concurrent_streams: nat32;
+    stream_timeout_seconds: nat64;
+    buffer_size: nat32;
+    prefetch_enabled: bool;
+};
+
+type OptimizationConfig = record {
+    cache_enabled: bool;
+    cache_ttl_seconds: nat64;
+    max_cache_entries: nat64;
+    cost_optimization_enabled: bool;
+    adaptive_batching: bool;
+};
+
+type QueryPlan = record {
+    id: text;
+    query_type: QueryType;
+    target_cells: vec principal;
+    operations: vec QueryOperation;
+    coordination_strategy: CoordinationStrategy;
+    streaming_config: opt StreamingConfig;
+};
+
+type QueryType = variant {
+    SingleCell;
+    CrossCell;
+    Aggregation;
+    Join;
+    Search;
+};
+
+type QueryOperation = variant {
+    Filter: text;
+    Sort: text;
+    Join: text;
+    Aggregate: text;
+    Limit: nat64;
+};
+
+type CoordinationStrategy = variant {
+    Sequential;
+    Parallel;
+    AdaptiveParallel;
+    PipelinedStreaming;
+};
+
+type BatchQuery = record {
+    query_sql: text;
+    target_cells: vec principal;
+    parameters: vec record { text; text };
+    options: BatchQueryOptions;
+};
+
+type BatchQueryOptions = record {
+    max_results: opt nat64;
+    timeout_ms: opt nat64;
+    consistency_level: ConsistencyLevel;
+    result_format: ResultFormat;
+};
+
+type ConsistencyLevel = variant {
+    Strong;
+    Eventual;
+    Weak;
+};
+
+type ResultFormat = variant {
+    Json;
+    Binary;
+    Streaming;
+};
+
+type StreamHandle = record {
+    id: text;
+    created_at: nat64;
+    expires_at: nat64;
+};
+
+type StreamBatch = record {
+    stream_handle: StreamHandle;
+    batch_number: nat32;
+    records: vec text;
+    has_more: bool;
+    estimated_remaining: opt nat64;
+};
+
+type BatchQueryResult = record {
+    query_id: text;
+    execution_time_ms: nat64;
+    records: vec text;
+    total_count: nat64;
+    cell_statistics: vec record { principal; CellExecutionStats };
+};
+
+type CellExecutionStats = record {
+    response_time_ms: nat64;
+    records_returned: nat64;
+    cycles_consumed: nat64;
+    cache_hit: bool;
+};
+
+type AggregatorMetrics = record {
+    active_streams: nat32;
+    registered_cells: nat32;
+    query_cache_hits: float64;
+    average_query_latency: nat64;
+    cycle_efficiency_score: float64;
+    last_updated: nat64;
+};
+
+type QueryStats = record {
+    total_queries: nat64;
+    successful_queries: nat64;
+    failed_queries: nat64;
+    average_execution_time: nat64;
+    cache_hit_rate: float64;
+    most_queried_cells: vec record { principal; nat64 };
+};
+
+type QueryError = variant {
+    PermissionDenied: text;
+    OptimizationFailed: text;
+    ExecutionFailed: text;
+    CoordinationFailed: text;
+    AggregationFailed: text;
+    StreamingFailed: text;
+    RegistrationFailed: text;
+    InvalidQuery: text;
+    CellUnavailable: principal;
+    TimeoutExceeded;
+    ResourceExhausted;
+};
+
+service : (AggregatorConfig) -> {
+    execute_streaming_query: (QueryPlan) -> (variant { Ok: StreamHandle; Err: QueryError });
+    execute_batch_query: (BatchQuery) -> (variant { Ok: BatchQueryResult; Err: QueryError });
+    get_stream_batch: (StreamHandle, nat32) -> (variant { Ok: StreamBatch; Err: QueryError });
+    close_stream: (StreamHandle) -> (variant { Ok; Err: QueryError });
+    register_cell: (CellRegistration) -> (variant { Ok; Err: QueryError });
+    get_aggregator_metrics: () -> (AggregatorMetrics) query;
+    get_query_stats: (nat64) -> (QueryStats) query;
+}
