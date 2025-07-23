@@ -1,4 +1,4 @@
-# CellDB: Serverless Database Framework for Internet Computer
+# CellDB – A Serverless Database Framework for the Internet Computer
 
 [![Internet Computer](https://img.shields.io/badge/Internet%20Computer-Protocol-blue)](https://internetcomputer.org)
 [![DFX](https://img.shields.io/badge/DFX-v0.22.0-green)](https://github.com/dfinity/sdk)
@@ -73,47 +73,23 @@ graph TB
 
 ```
 celldb/
-├── canisters/                      # Canister implementations
-│   ├── cell_manager/               # Cell lifecycle management
-│   │   ├── src/
-│   │   │   ├── lib.rs             # Main canister logic
-│   │   │   ├── state.rs           # Stable memory state management
-│   │   │   └── types.rs           # Candid type definitions
-│   │   └── cell_manager.did       # Candid interface specification
-│   ├── data_cell/                 # Autonomous storage actors
-│   │   ├── src/
-│   │   │   ├── lib.rs             # Core Cell functionality
-│   │   │   ├── schema.rs          # Schema validation and versioning
-│   │   │   ├── storage.rs         # Stable memory operations
-│   │   │   ├── validation.rs      # Data validation logic
-│   │   │   └── access_control.rs  # Permission management
-│   │   └── data_cell.did          # Cell interface specification
-│   ├── query_aggregator/          # Cross-canister coordination
-│   │   ├── src/
-│   │   │   ├── lib.rs             # Aggregation logic
-│   │   │   ├── streaming.rs       # Result streaming implementation
-│   │   │   ├── coordination.rs    # Multi-canister orchestration
-│   │   │   └── optimization.rs    # Query optimization engine
-│   │   └── query_aggregator.did   # Aggregator interface
-│   └── atlas_mesh/                # Distributed indexing
-│       ├── src/
-│       │   ├── lib.rs             # Mesh coordination
-│       │   ├── indexing.rs        # Index management
-│       │   ├── search.rs          # Full-text search
-│       │   └── sync.rs            # Cross-mesh synchronization
-│       └── atlas_mesh.did         # Mesh interface specification
-├── sdk/                           # Developer interfaces
-│   ├── rust/                      # Rust client library
-│   ├── motoko/                    # Motoko integration modules
-│   └── typescript/                # TypeScript/JavaScript SDK
-├── examples/                      # Integration examples
-│   ├── social_media/              # Social platform implementation
+├── canisters/                      # Core canister implementations
+│   ├── cell_manager/               # Cell lifecycle & orchestration
+│   ├── data_cell/                  # Autonomous storage actors
+│   ├── query_aggregator/           # Cross-canister coordination
+│   └── atlas_mesh/                 # Distributed indexing
+├── sdk/                           # Client libraries & integrations
+│   ├── rust/                      # Native Rust SDK
+│   ├── motoko/                    # Motoko actor integration
+│   └── typescript/                # Frontend JavaScript/TypeScript
+├── examples/                      # Reference implementations
+│   ├── social_media/              # Social platform demo
 │   ├── dao_governance/            # DAO data management
-│   └── gaming/                    # Real-time gaming data
-├── tests/                         # Test suites
-├── scripts/                       # Deployment automation
-├── dfx.json                       # DFX project configuration
-└── Cargo.toml                     # Rust workspace configuration
+│   └── gaming/                    # Real-time gaming example
+├── tests/                         # Test suites & benchmarks
+├── scripts/                       # Deployment & automation
+├── dfx.json                       # Internet Computer project config
+└── Cargo.toml                     # Rust workspace definition
 ```
 
 ## Installation
