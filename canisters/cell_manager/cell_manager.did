@@ -1,0 +1,99 @@
+type CellConfig = record {
+    name: text;
+    schema: SchemaDefinition;
+    memory_limit: opt nat64;
+    cycles_limit: opt nat64;
+    permissions: PermissionConfig;
+    scaling_config: opt ScalingConfig;
+};
+
+type SchemaDefinition = record {
+    version: nat32;
+    fields: vec record { text; FieldType };
+    indexes: vec text;
+    constraints: vec SchemaConstraint;
+};
+
+type FieldType = variant {
+    Text: record { max_length: opt nat32 };
+    Number: record { min: opt int64; max: opt int64 };
+    Boolean;
+    Principal;
+    Timestamp;
+    Blob: record { max_size: opt nat64 };
+    Array: record { element_type: FieldType; max_items: opt nat32 };
+    Object: record { fields: vec record { text; FieldType } };
+};
+
+type SchemaConstraint = variant {
+    Required: text;
+    Unique: text;
+    Index: text;
+    ForeignKey: record { field: text; references: text };
+};
+
+type PermissionConfig = record {
+    read: vec AccessLevel;
+    write: vec AccessLevel;
+    admin: vec principal;
+};
+
+type AccessLevel = variant {
+    Public;
+    Authenticated;
+    Principal: principal;
+    Role: text;
+};
+
+type ScalingConfig = record {
+    auto_scale: bool;
+    max_cells: nat32;
+    split_threshold: float64;
+    strategy: ScalingStrategy;
+};
+
+type ScalingStrategy = variant {
+    Horizontal;
+    Vertical;
+    Hybrid;
+};
+
+type CellInfo = record {
+    id: principal;
+    name: text;
+    schema: SchemaDefinition;
+    status: CellStatus;
+    created_at: nat64;
+    updated_at: nat64;
+    metrics: CellMetrics;
+};
+
+type CellStatus = variant {
+    Creating;
+    Active;
+    Scaling;
+    Maintenance;
+    Error: text;
+};
+
+type CellMetrics = record {
+    memory_usage: nat64;
+    cycle_consumption: nat64;
+    operation_count: nat64;
+    last_updated: nat64;
+};
+
+type CellError = variant {
+    NotFound: text;
+    InvalidSchema: text;
+    InsufficientCycles;
+    PermissionDenied;
+    NotImplemented: text;
+};
+
+service : {
+    create_cell: (CellConfig) -> (variant { Ok: CellInfo; Err: CellError });
+    list_cells: () -> (vec CellInfo) query;
+    get_cell_info: (principal) -> (opt CellInfo) query;
+    scale_cell: (principal, ScalingConfig) -> (variant { Ok: vec principal; Err: CellError });
+}

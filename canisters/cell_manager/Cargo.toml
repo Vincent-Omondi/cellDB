@@ -1,0 +1,15 @@
+[package]
+name = "cell_manager"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ic-cdk.workspace = true
+ic-cdk-timers.workspace = true
+ic-stable-structures.workspace = true
+serde.workspace = true
+candid.workspace = true
+anyhow.workspace = true
