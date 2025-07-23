@@ -32,54 +32,41 @@ The CellDB architecture leverages the Internet Computer's actor model where each
 graph TB
     subgraph "Internet Computer Subnet"
         subgraph "CellDB Infrastructure"
-            CM[Cell Manager<br/>Lifecycle & Orchestration]
-            QA[Query Aggregator<br/>Cross-Canister Coordination]
-            AM[Atlas Mesh<br/>Distributed Indexing]
+            CM(Cell Manager<br/>Lifecycle & Orchestration)
+            QA(Query Aggregator<br/>Cross-Canister Coordination)
+            AM(Atlas Mesh<br/>Distributed Indexing)
 
             subgraph "Data Cells"
-                DC1[Data Cell 1<br/>User Profiles]
-                DC2[Data Cell 2<br/>Posts & Content]
-                DC3[Data Cell 3<br/>Social Graph]
+                DC1(Data Cell 1<br/>User Profiles)
+                DC2(Data Cell 2<br/>Posts & Content)
+                DC3(Data Cell 3<br/>Social Graph)
             end
         end
 
-        subgraph "Stable Memory Layer"
-            SM1[Stable Memory<br/>Schema & State]
-            SM2[Stable Memory<br/>Query Cache]
-            SM3[Stable Memory<br/>Index Storage]
-        end
+        SM(Stable Memory<br/>Persistent Storage)
     end
 
-    %% Management relationships
-    CM -.->|Creates & Manages| DC1
-    CM -.->|Creates & Manages| DC2
-    CM -.->|Creates & Manages| DC3
+    %% Core relationships
+    CM -->|Manages| DC1
+    CM -->|Manages| DC2
+    QA -->|Coordinates| DC2
+    QA -->|Coordinates| DC3
+    AM -->|Indexes| DC1
+    AM -->|Indexes| DC3
 
-    %% Query coordination
-    QA <-->|Async Queries| DC1
-    QA <-->|Async Queries| DC2
-    QA <-->|Async Queries| DC3
+    %% Persistence
+    DC1 -.-> SM
+    DC2 -.-> SM
+    DC3 -.-> SM
 
-    %% Indexing relationships
-    AM -->|Event Subscription| DC1
-    AM -->|Event Subscription| DC2
-    AM -->|Event Subscription| DC3
-
-    %% Stable memory persistence
-    DC1 -.-> SM1
-    DC2 -.-> SM1
-    DC3 -.-> SM1
-    QA -.-> SM2
-    AM -.-> SM3
-
-    %% Styling
-    classDef canister fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
-    classDef storage fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef infrastructure fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    %% Dark mode friendly styling
+    classDef canister fill:#2d3748,stroke:#4fd1c7,stroke-width:2px,color:#ffffff
+    classDef infrastructure fill:#1a202c,stroke:#68d391,stroke-width:2px,color:#ffffff
+    classDef storage fill:#2d1b69,stroke:#9f7aea,stroke-width:2px,color:#ffffff
 
     class DC1,DC2,DC3 canister
-    class SM1,SM2,SM3 storage
     class CM,QA,AM infrastructure
+    class SM storage
 ```
 
 ## File System Layout
