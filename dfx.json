@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "canisters": {
+    "cell_manager": {
+      "type": "rust",
+      "package": "cell_manager",
+      "candid": "canisters/cell_manager/cell_manager.did"
+    },
+    "data_cell": {
+      "type": "rust",
+      "package": "data_cell",
+      "candid": "canisters/data_cell/data_cell.did"
+    },
+    "query_aggregator": {
+      "type": "rust",
+      "package": "query_aggregator",
+      "candid": "canisters/query_aggregator/query_aggregator.did"
+    },
+    "atlas_mesh": {
+      "type": "rust",
+      "package": "atlas_mesh",
+      "candid": "canisters/atlas_mesh/atlas_mesh.did"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:4943",
+      "type": "ephemeral"
+    }
+  }
+}
