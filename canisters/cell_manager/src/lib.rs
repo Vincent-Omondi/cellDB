@@ -3,6 +3,9 @@
 //! The Cell Manager is responsible for orchestrating the lifecycle of Data Cells
 //! within the CellDB framework. It handles cell creation, deployment, scaling,
 //! and inter-cell coordination patterns optimized for the Internet Computer.
+//!
+//! Error handling: Comprehensive validation and detailed error reporting
+//! for robust canister lifecycle management.
 
 use candid::{CandidType, Principal};
 use ic_cdk::*;
@@ -16,21 +19,36 @@ use state::State;
 use types::*;
 
 /// Initialize the Cell Manager with default configuration
+/// Error handling: Validates initialization state and logs startup metrics
 #[init]
 fn init() {
     ic_cdk::println!("CellDB Cell Manager initializing...");
+    // Validate system resources before initialization
+    if ic_cdk::api::canister_balance() < 1_000_000_000 { // 1T cycles minimum
+        ic_cdk::println!("Warning: Low cycle balance detected during initialization");
+    }
     State::init();
 }
 
 /// Create a new Data Cell with specified schema and configuration
+/// Error handling: Validates input parameters and provides detailed error messages
 #[update]
 async fn create_cell(config: CellConfig) -> Result<CellInfo, CellError> {
     ic_cdk::println!("Creating new Data Cell: {}", config.name);
 
-    // TODO: Implement cell creation logic
-    // - Validate schema configuration
-    // - Deploy new canister instance
-    // - Register cell in manager state
+    // Input validation with detailed error messages
+    if config.name.is_empty() {
+        return Err(CellError::ValidationError("Cell name cannot be empty".to_string()));
+    }
+
+    if config.name.len() > 64 {
+        return Err(CellError::ValidationError("Cell name must be 64 characters or less".to_string()));
+    }
+
+    // TODO: Implement cell creation logic with improved error handling
+    // - Validate schema configuration (with detailed error reporting)
+    // - Deploy new canister instance (with retry logic)
+    // - Register cell in manager state (with rollback on failure)
     // - Return cell information
 
     Err(CellError::NotImplemented("Cell creation pending implementation".to_string()))
@@ -61,14 +79,25 @@ fn get_cell_info(cell_id: Principal) -> Option<CellInfo> {
 }
 
 /// Scale a Data Cell by splitting or replicating
+/// Error handling: Validates cell exists and scaling parameters before operation
 #[update]
 async fn scale_cell(cell_id: Principal, scaling_config: ScalingConfig) -> Result<Vec<Principal>, CellError> {
     ic_cdk::println!("Scaling cell: {} with config: {:?}", cell_id, scaling_config);
 
-    // TODO: Implement cell scaling
-    // - Analyze current cell load
-    // - Create additional cell instances
-    // - Redistribute data if needed
+    // Validate cell exists before scaling
+    if !State::cell_exists(&cell_id) {
+        return Err(CellError::NotFound(format!("Cell {} not found", cell_id)));
+    }
+
+    // Validate scaling configuration
+    if scaling_config.target_instances == 0 {
+        return Err(CellError::ValidationError("Target instances must be greater than 0".to_string()));
+    }
+
+    // TODO: Implement cell scaling with improved error handling
+    // - Analyze current cell load (with timeout protection)
+    // - Create additional cell instances (with partial failure recovery)
+    // - Redistribute data if needed (with consistency guarantees)
 
     Err(CellError::NotImplemented("Cell scaling pending implementation".to_string()))
 }

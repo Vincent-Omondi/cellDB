@@ -7,13 +7,21 @@ members = [
 ]
 
 [workspace.dependencies]
-ic-cdk = "0.13"
+# Core IC dependencies - optimized for performance
+ic-cdk = { version = "0.13", features = ["stable-memory"] }
 ic-cdk-timers = "0.7"
-ic-stable-structures = "0.6"
-serde = { version = "1.0", features = ["derive"] }
-candid = "0.10"
-anyhow = "1.0"
+ic-stable-structures = { version = "0.6", features = ["btreemap"] }
+serde = { version = "1.0", features = ["derive"], default-features = false }
+candid = { version = "0.10", features = ["all"] }
+anyhow = { version = "1.0", default-features = false }
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+
+# Build optimization for cycle efficiency
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+overflow-checks = false
