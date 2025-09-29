@@ -1,5 +1,10 @@
 {
   "version": 1,
+  // Cycle optimization: Enable local replica optimizations
+  "replica": {
+    "artificial_delay": 300,
+    "log_level": "info"
+  },
   "canisters": {
     "cell_manager": {
       "type": "rust",
@@ -24,14 +29,23 @@
   },
   "defaults": {
     "build": {
-      "args": "",
+      // Performance optimization: Enable release mode for production builds
+      "args": "--release",
       "packtool": ""
     }
   },
   "networks": {
     "local": {
       "bind": "127.0.0.1:4943",
-      "type": "ephemeral"
+      "type": "ephemeral",
+      // Cycle optimization: Increase subnet memory for better performance
+      "subnet": {
+        "memory_capacity": "8589934592"
+      }
+    },
+    "ic": {
+      "providers": ["https://ic0.app"],
+      "type": "persistent"
     }
   }
 }
